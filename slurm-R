@@ -1,0 +1,65 @@
+#!/bin/bash
+#SBATCH --error=r.err
+#SBATCH --output=r.out
+#SBATCH --job-name=CSE487-R
+#SBATCH --mail-user=saisrina@buffalo.edu
+#SBATCH --mail-type=END
+#SBATCH --time=00:60:00
+#SBATCH --cpus-per-task=1
+#SBATCH --nodes=1
+##SBATCH --partition=general-compute
+
+# for 8-core nodes
+#SBATCH --mem=24000
+#SBATCH --tasks-per-node=8
+#SBATCH --constraint=CPU-L5630|CPU-L5520
+
+# for 12-core nodes
+##SBATCH --mem=48000
+##SBATCH --tasks-per-node=12
+##SBATCH --constraint=CPU-E5645
+
+# for 16-core nodes
+##SBATCH --mem=128000
+##SBATCH --tasks-per-node=16
+##SBATCH --constraint=CPU-E5-2660
+
+# for 32-core nodes
+##SBATCH --mem=256000
+##SBATCH --tasks-per-node=32
+##SBATCH --constraint=CPU-6132HE|CPU-E7-4830|CPU-X7550
+
+tic=`date +%s`
+echo "Start Time = "`date`
+
+#construct nodefile
+SLURM_NODEFILE=my_slurm_nodes.$$
+srun hostname | sort > $SLURM_NODEFILE
+
+# load R module
+module load R/3.1.2
+
+# cd to directory from which job was submitted
+cd $SLURM_SUBMIT_DIR
+
+# compute number of processors
+NPROCS=`cat $SLURM_NODEFILE | wc -l`
+
+# set intel-mpi environment variables
+# turn debugging up a bit
+export I_MPI_DEBUG=5
+export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so
+
+# launch simple Rmpi example using srun
+# NOTE: This requires .Rprofile file in the workdir
+echo "Launching hw2"
+srun -n $NPROCS Rscript hw2.R
+
+echo "All Done!"
+
+echo "End Time = "`date`
+toc=`date +%s`
+
+elapsedTime=`expr $toc - $tic`
+echo "Elapsed Time = $elapsedTime seconds"
+
